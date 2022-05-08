@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 
 class DomainIdentification():
@@ -197,8 +196,6 @@ class DomainIdentification():
                 if node != processing_element:
                     flg &= self.nodes[node]['visited']
         # print(flg)
-
-        
 
         print("Nodes: ", self.nodes)
         for node in self.nodes.keys():
