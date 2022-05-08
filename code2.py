@@ -203,8 +203,6 @@ class DomainIdentification():
         print("Nodes: ", self.nodes)
         for node in self.nodes.keys():
             print("{}:  {}".format(node, self.nodes[node]['domain_nodes']))
-        # print()
-        # print("self.di_loads: ", self.di_loads)
 
         return None
 
