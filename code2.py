@@ -173,6 +173,21 @@ class DomainIdentification():
             # print("after 1st attaching nodes di_loads: ", self.di_loads)
             # print("di_loads: ", self.di_loads)
 
+            for node in self.nodes.keys():
+                if self.nodes[node]['level'] == 0 and len(self.nodes[node]['domain_nodes']) < 2 and node in domain_initials1:
+                    self.nodes[processing_element]['domain_nodes'].remove(node)
+                    if node in self.di_loads.keys():
+                        del self.di_loads[node]
+                    self.nodes[node]['connected'] = False
+                    self.nodes[node]['domain_initial'] = False
+                    self.nodes[node]['visited'] = 0
+                    self.nodes[node]['parent'].clear()
+                    for dn in self.nodes[node]['domain_nodes']:
+                        self.nodes[dn]['connected'] = False
+                        self.nodes[dn]['domain_initial'] = False
+                        self.nodes[dn]['parent'].clear()
+                        self.nodes[dn]['visited'] = 0
+                    self.nodes[node]['domain_nodes'].clear()
 
             flg = self.nodes[processing_element]['visited']
             for node in self.nodes.keys():
@@ -183,24 +198,8 @@ class DomainIdentification():
                     flg &= self.nodes[node]['visited']
         # print(flg)
 
-        for node in self.nodes.keys():
-            if self.nodes[node]['level'] == 0 and len(self.nodes[node]['domain_nodes']) < 2:
-                self.nodes[node]['connected'] = False
-                self.nodes[node]['domain_initial'] = False
-                self.nodes[node]['visited'] = 0
-                for di in self.nodes[node]['domain_nodes']:
-                    self.nodes[di]['connected'] = False
-                    self.nodes[di]['domain_initial'] = False
-                    self.nodes[node]['visited'] = 0
-                self.nodes[node]['domain_nodes'].clear()
-
-        # for node in self.nodes.keys():
-        #     if self.nodes[node]['domain_initial'] == False and self.nodes[node]['connected'] == False:
-        #         flg = False
-        #         break
-        #     else:
-        #         flg=True
         
+
         print("Nodes: ", self.nodes)
         for node in self.nodes.keys():
             print("{}:  {}".format(node, self.nodes[node]['domain_nodes']))
