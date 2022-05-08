@@ -33,7 +33,7 @@ class DomainIdentification():
             if not self.nodes[node]['processing_element'] and self.cal_distance(self.nodes[node]['node_id'], processing_element) <=5:
                 self.nodes[node]['domain_initial'] = True
                 self.nodes[node]['connected'] = True
-                self.nodes[node]['visited'] = True
+                self.nodes[node]['visited'] = 1
                 self.nodes[node]['parent'].append(processing_element)
                 self.nodes[processing_element]['domain_nodes'].append(self.nodes[node]['node_id'])
                 self.nodes[processing_element]['connected'] = True
@@ -64,13 +64,16 @@ class DomainIdentification():
                     self.membership_value[di][remain] = 0
 
     def cal_di_loads(self, domain_initials, remaining_nodes, processing_element):
+        # print("di_loads before: ",self.di_loads)
         for di in domain_initials:
             ori = di
+            # print("ori: ", ori)
             p = self.nodes[di]['parent'][0]
             while(p != processing_element):
                 di = p
                 p = self.nodes[p]['parent'][0]
-        
+            # print("P: ", p)
+            # print("di: ", di)
             load = self.di_loads[di]
             for remain in remaining_nodes:
                 load += self.membership_value[ori][remain]
@@ -94,7 +97,8 @@ class DomainIdentification():
                 self.nodes[i]['connected'] = True
                 self.nodes[i]['domain_initial'] = True
                 self.nodes[i]['parent'].append(sorted_remaining_nodes[i][0])
-                self.nodes[i]['visited'] = True
+                self.nodes[i]['visited'] = 1
+                self.nodes[i]['level'] = self.nodes[sorted_remaining_nodes[i][0]]['level'] + 1
             elif len(sorted_remaining_nodes[i]) > 1:
                 max_parent = -1
                 max_parent_val = -1
@@ -110,7 +114,8 @@ class DomainIdentification():
                 self.nodes[i]['connected'] = True
                 self.nodes[i]['domain_initial'] = True
                 self.nodes[i]['parent'].append(max_parent)
-                self.nodes[i]['visited'] = True
+                self.nodes[i]['visited'] = 1
+                self.nodes[i]['level'] = self.nodes[max_parent]['level'] + 1
                 for j in sorted_remaining_nodes[i]:
                     # print("j: ", j)
                     ori = j
@@ -134,76 +139,60 @@ class DomainIdentification():
                 'connected': False,
                 'parent': [],
                 'domain_nodes': [],
-                'visited': False
+                'visited': 0,
+                'level': 0
             }
 
         # Creating primary node and initiating the graph building process
         processing_element = int(input("Enter processing element/ node number: "))
         self.nodes[processing_element]['processing_element'] = True
-        self.nodes[processing_element]['visited'] = True
+        self.nodes[processing_element]['visited'] = 1
 
         self.create_domain_initials(processing_element)
-        
+        domain_initials1 = [self.nodes[node]['node_id'] for node in self.nodes.keys() if self.nodes[node]['domain_initial']==True]
+        self.di_loads = {key: 0 for key in domain_initials1}
+
         flg = False
-        # while(not flg):
-        remaining_nodes = [self.nodes[node]['node_id'] for node in self.nodes.keys() if self.nodes[node]['connected']==False]
-        domain_initials = [self.nodes[node]['node_id'] for node in self.nodes.keys() if self.nodes[node]['domain_initial']==True]
-        # print("remaining_nodes: ", remaining_nodes)
-        # print("domain_initials: ", domain_initials)
-        
-        # print("Nodes: ", self.nodes)
-        self.find_closest_mapping(domain_initials, remaining_nodes)
-        # print("closest mapping: ", closest_mapping)
-        
-        self.find_membership_value(domain_initials, remaining_nodes)
-        # print("membership_value: ", membership_value)
+        while(not flg):
+            remaining_nodes = [self.nodes[node]['node_id'] for node in self.nodes.keys() if self.nodes[node]['connected']==False and self.nodes[node]['domain_initial'] == False]
+            domain_initials = [self.nodes[node]['node_id'] for node in self.nodes.keys() if self.nodes[node]['domain_initial']==True]
+            # print("remaining_nodes: ", remaining_nodes)
+            # print("domain_initials: ", domain_initials)
+            
+            # print("Nodes: ", self.nodes)
+            self.find_closest_mapping(domain_initials, remaining_nodes)
+            # print("closest mapping: ", self.closest_mapping)
+            
+            self.find_membership_value(domain_initials, remaining_nodes)
+            # print("membership_value: ", self.membership_value)
 
-        self.di_loads = {key: 0 for key in domain_initials}
-        self.cal_di_loads(domain_initials, remaining_nodes, processing_element)
-        # print("di_loads: ", self.di_loads)
+            
+            self.cal_di_loads(domain_initials, remaining_nodes, processing_element)
+            
+            self.attach_nodes(processing_element)
+            # print("after 1st attaching nodes di_loads: ", self.di_loads)
+            # print("di_loads: ", self.di_loads)
 
-        self.attach_nodes(processing_element)
-        # print("after 1st attaching nodes di_loads: ", self.di_loads)
 
-        nda = []
+            flg = self.nodes[processing_element]['visited']
+            for node in self.nodes.keys():
+                if node in domain_initials:
+                    if self.nodes[node]['domain_initial'] == True:
+                        self.nodes[node]['domain_initial'] = False
+                if node != processing_element:
+                    flg &= self.nodes[node]['visited']
+        # print(flg)
+
         for node in self.nodes.keys():
-            if self.nodes[node]['domain_initial'] == False and self.nodes[node]['connected'] == False:
-                nda.append(node)
-        # print("nda: ", nda)
-        
-        for i in domain_initials:
-            self.nodes[i]['domain_initial'] = False
-
-        # print("Nodes: ", self.nodes)
-
-        new_di = [self.nodes[node]['node_id'] for node in self.nodes.keys() if self.nodes[node]['domain_initial']==True]
-
-        self.find_closest_mapping(new_di, nda)
-        # print("closest mapping: ", closest_mapping1)
-        
-        self.find_membership_value(new_di, nda)
-        # print("membership_value1: ", membership_value1)
-
-        self.cal_di_loads(new_di, nda, processing_element)
-        # print("self.di_loads1: ", self.di_loads)
-        
-        self.attach_nodes(processing_element)
-        print("self.di_loads1: ", self.di_loads)
-
-        # for node in self.nodes.keys():
-        #     if self.nodes[node]['domain_initial'] == True:
-        #         print(node)
-
-        # for node in self.nodes.keys():
-        #     if node in domain_initials and len(self.nodes[node]['domain_nodes']) < 2:
-        #         self.nodes[node]['connected'] = False
-        #         self.nodes[node]['domain_initial'] = False
-        #         # self.nodes[node]['visited'] = False
-        #         for di in self.nodes[node]['domain_nodes']:
-        #             self.nodes[di]['connected'] = False
-        #             self.nodes[di]['domain_initial'] = False
-        #             # self.nodes[node]['visited'] = False
-        #         self.nodes[node]['domain_nodes'].clear()
+            if self.nodes[node]['level'] == 0 and len(self.nodes[node]['domain_nodes']) < 2:
+                self.nodes[node]['connected'] = False
+                self.nodes[node]['domain_initial'] = False
+                self.nodes[node]['visited'] = 0
+                for di in self.nodes[node]['domain_nodes']:
+                    self.nodes[di]['connected'] = False
+                    self.nodes[di]['domain_initial'] = False
+                    self.nodes[node]['visited'] = 0
+                self.nodes[node]['domain_nodes'].clear()
 
         # for node in self.nodes.keys():
         #     if self.nodes[node]['domain_initial'] == False and self.nodes[node]['connected'] == False:
