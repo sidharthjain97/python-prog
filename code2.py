@@ -79,6 +79,7 @@ class DomainIdentification():
             self.di_loads[di] = round(load, 2)
 
     def attach_nodes(self, processing_element):
+        # print("di loads: ", self.di_loads)
         # print("self.membership_value: ",self.membership_value)
         sort_remaining_nodes = sorted(self.closest_mapping.items(), key=lambda x: len(x[1]), reverse=False)
         # print("sort_remaining_nodes: ", sort_remaining_nodes)
@@ -88,6 +89,7 @@ class DomainIdentification():
         # print("sorted_remaining_nodes: ",sorted_remaining_nodes)
 
         for i in sorted_remaining_nodes.keys():
+            # print("value of i: ", i)
             if len(sorted_remaining_nodes[i]) <= 0:
                 continue
             elif len(sorted_remaining_nodes[i]) == 1:
@@ -104,8 +106,31 @@ class DomainIdentification():
                 for j in sorted_remaining_nodes[i]:
                     # print("j: ", j)
                     if self.membership_value[j][i] > max_parent_val:
+                        # print("one max")
                         max_parent = j
                         max_parent_val = self.membership_value[j][i]
+                    elif self.membership_value[j][i] == max_parent_val:
+                        # print("equal case")
+                        ori = j
+                        p = self.nodes[j]['parent'][0]
+                        while(p != processing_element):
+                            j = p
+                            p = self.nodes[p]['parent'][0]
+                        load_p = self.di_loads[j]
+                        
+                        curr_max = max_parent
+                        p = self.nodes[curr_max]['parent'][0]
+                        while(p != processing_element):
+                            curr_max = p
+                            p = self.nodes[p]['parent'][0]
+                        curr_p_load = self.di_loads[curr_max]
+                        if load_p <= curr_p_load:
+                            max_parent = ori
+                            max_parent_val = self.membership_value[max_parent][i]
+                        else:
+                            max_parent = curr_max
+                            max_parent_val = self.membership_value[max_parent][i]
+
                 # print("max_parent:", max_parent)
                 # print("max_parent_val:", max_parent_val)
                 self.nodes[max_parent]['domain_nodes'].append(i)
@@ -124,6 +149,7 @@ class DomainIdentification():
                         p = self.nodes[p]['parent'][0]
                     if ori != max_parent:
                         self.di_loads[j] = round(self.di_loads[j] - self.membership_value[ori][i],2)
+                    
 
     def main(self):
         # Enter the number of required no of nodes, if 15 nodes are entered, they will be ordered from 0 to 14
@@ -200,7 +226,7 @@ class DomainIdentification():
         print("Nodes: ", self.nodes)
         for node in self.nodes.keys():
             print("{}:  {}".format(node, self.nodes[node]['domain_nodes']))
-
+        print("di_loads: ", self.di_loads)
         return None
 
 if __name__ == '__main__':
