@@ -223,10 +223,29 @@ class DomainIdentification():
                     flg &= self.nodes[node]['visited']
         # print(flg)
 
-        print("Nodes: ", self.nodes)
+        clusters = {}
+        clusters[processing_element] = {"parent": None, "children": self.nodes[processing_element]['domain_nodes']}
+        for n in clusters[processing_element]["children"]:
+            clusters[n] = {"parent": processing_element, "children": []}
         for node in self.nodes.keys():
-            print("{}:  {}".format(node, self.nodes[node]['domain_nodes']))
-        print("di_loads: ", self.di_loads)
+            if node not in clusters.keys():
+                ori = node
+                p = self.nodes[node]['parent'][0]
+                while(p != processing_element):
+                    node = p
+                    p = self.nodes[p]['parent'][0]
+                clusters[node]['children'].append(ori)
+
+        # print("Nodes: ", self.nodes)
+        # for node in self.nodes.keys():
+        #     print("{}:  {}".format(node, self.nodes[node]['domain_nodes']))
+        # print()
+        # print("di_loads: ", self.di_loads)
+        # print()
+        print("Final Clusters: ")
+        for node in clusters.keys():
+            print("{}:  {}".format(node, clusters[node]['children']))
+        
         return None
 
 if __name__ == '__main__':
