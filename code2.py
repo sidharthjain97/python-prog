@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.metrics.pairwise import euclidean_distances
 
 class DomainIdentification():
     def __init__(self):
@@ -7,7 +8,7 @@ class DomainIdentification():
         loads the distance matrix and nodes
         """
         # Distance Matrix extracted from research paper for calculating distance between nodes
-        self.distance_matrix = pd.read_csv("./distance_matrix.csv", header=None).to_numpy()
+        self.distance_matrix = []
 
         # Empty dictionary of nodes
         self.nodes = dict()
@@ -153,7 +154,12 @@ class DomainIdentification():
 
     def main(self):
         # Enter the number of required no of nodes, if 15 nodes are entered, they will be ordered from 0 to 14
-        num_nodes = int(input("Enter no of nodes: "))
+        coordinates = pd.read_csv("30coordinate.csv")
+        num_nodes = coordinates.shape[0]
+        
+        coords = coordinates.to_numpy()
+        self.distance_matrix = euclidean_distances(coords, coords)
+        print("Number of nodes in the network: ", num_nodes)
 
         # Initializing nodes
         for i in range(1, num_nodes+1, 1):
@@ -167,7 +173,7 @@ class DomainIdentification():
                 'visited': 0,
                 'level': 0
             }
-
+        
         # Creating primary node and initiating the graph building process
         processing_element = int(input("Enter processing element/ node number: "))
         self.nodes[processing_element]['processing_element'] = True
@@ -177,29 +183,32 @@ class DomainIdentification():
         domain_initials1 = [self.nodes[node]['node_id'] for node in self.nodes.keys() if self.nodes[node]['domain_initial']==True]
         self.di_loads = {key: 0 for key in domain_initials1}
 
+        # print(self.nodes)
         flg = False
+        # count = 7
         while(not flg):
+        # while(count):
+            # print()
             remaining_nodes = [self.nodes[node]['node_id'] for node in self.nodes.keys() if self.nodes[node]['connected']==False and self.nodes[node]['domain_initial'] == False]
             domain_initials = [self.nodes[node]['node_id'] for node in self.nodes.keys() if self.nodes[node]['domain_initial']==True]
             # print("remaining_nodes: ", remaining_nodes)
             # print("domain_initials: ", domain_initials)
-            
-            # print("Nodes: ", self.nodes)
+                   
             self.find_closest_mapping(domain_initials, remaining_nodes)
             # print("closest mapping: ", self.closest_mapping)
             
             self.find_membership_value(domain_initials, remaining_nodes)
             # print("membership_value: ", self.membership_value)
 
-            
             self.cal_di_loads(domain_initials, remaining_nodes, processing_element)
             
             self.attach_nodes(processing_element)
             # print("after 1st attaching nodes di_loads: ", self.di_loads)
             # print("di_loads: ", self.di_loads)
-
+            # print("Nodes: ", self.nodes)
             for node in self.nodes.keys():
                 if self.nodes[node]['level'] == 0 and len(self.nodes[node]['domain_nodes']) < 2 and node in domain_initials1:
+                    # print("node:", node)
                     self.nodes[processing_element]['domain_nodes'].remove(node)
                     if node in self.di_loads.keys():
                         del self.di_loads[node]
@@ -207,6 +216,7 @@ class DomainIdentification():
                     self.nodes[node]['domain_initial'] = False
                     self.nodes[node]['visited'] = 0
                     self.nodes[node]['parent'].clear()
+                    self.nodes[node]['level'] = 1
                     for dn in self.nodes[node]['domain_nodes']:
                         self.nodes[dn]['connected'] = False
                         self.nodes[dn]['domain_initial'] = False
@@ -221,6 +231,7 @@ class DomainIdentification():
                         self.nodes[node]['domain_initial'] = False
                 if node != processing_element:
                     flg &= self.nodes[node]['visited']
+            # count -= 1
         # print(flg)
 
         clusters = {}
@@ -241,10 +252,17 @@ class DomainIdentification():
         #     print("{}:  {}".format(node, self.nodes[node]['domain_nodes']))
         # print()
         # print("di_loads: ", self.di_loads)
-        # print()
+        print()
         print("Final Clusters: ")
         for node in clusters.keys():
+            print()
             print("{}:  {}".format(node, clusters[node]['children']))
+            if node in self.di_loads.keys():
+                print(f"Load at {node} node: {self.di_loads[node]}")
+            print("Children Nodes Network: ")
+            for child in clusters[node]['children']:
+                if len(self.nodes[child]['domain_nodes']) > 0:
+                    print("{}:  {}".format(child, self.nodes[child]['domain_nodes']))
         
         return None
 
